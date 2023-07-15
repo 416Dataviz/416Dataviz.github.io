@@ -1,0 +1,23 @@
+.container {
+    display: flex;
+    justify-content: center;
+    background-color: aqua;
+}
+
+.header {
+    width: 70%;
+    background-color: brown;
+    justify-content: left;
+    padding: 2%;
+}
+
+.header .title {
+    display: flex;
+    justify-content: center;
+    font-size: 250%;
+    font-weight: bold;
+}
+
+.header p {
+    font-size: 125%;
+}
