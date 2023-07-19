@@ -6,63 +6,479 @@
     <title>Sangat Das: CS-416 Data Visualization</title>
     <link rel="stylesheet" href="styles.css"/>
     <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script>
 </head>
 <body class="container" onload="init()">
     <div class="header">
-        <div class="title">
-            Car Data Visualization
-        </div>
-        <hr/>
-        <p>
-            "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"
-        </p>
-    </div>
+        <div class="content">
+            <div class="title">
+                Cereal Visualization
+            </div>
+            <hr/>
+            <p>
+                "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"
+            </p>
+        </div> 
+    </div><br/>
     <div class="visualization">
-        <div class="scene">
-            <svg id="scene1"></svg>
+        <div class="tab-wrapper">
+            <div class="tab">
+                <button class="tablinks" onclick="openScene(event, 'overview')" id="overview-btn">Overview</button>
+                <button class="tablinks hidden" onclick="openScene(event, 'cereals')" id="cereals-btn">Cereals</button>
+                <button class="tablinks hidden" onclick="openScene(event, 'nutritional-info')" id="nutritional-info-btn">Nutritional Info</button>
+            </div>    
         </div>
+        <div id="tooltip"></div>
+        <div class="content">
+            <div id="overview" class="tabcontent">
+                <svg id="scene1" class="scene"></svg>
+            </div>              
+            <div id="cereals" class="tabcontent">
+                <svg id="scene2" class="scene"></svg>
+            </div>
+            <div id="nutritional-info" class="tabcontent">
+                <svg id="scene3" class="scene"></svg>
+            </div>
+        </div>    
     </div>
     <script>
-        var margin = {top: 10, right: 30, bottom: 30, left: 60};
-        var width = 460 - margin.left - margin.right;
-        var height = 400 - margin.top - margin.bottom;
-        var engine_color = {
-            Gasoline: "blue",
-            Diesel: "red",
-            Electricity: "green"
+        var margin = {top: 10, right: 200, bottom: 120, left: 80};
+        var width = 1000 - margin.left - margin.right;
+        var height = 600 - margin.top - margin.bottom;
+        var manufacturer = {
+            "American Home Food Products": "blue",
+            "General Mills": "red",
+            "Kelloggs": "green",
+            "Nabisco": "orange",
+            "Post": "violet",
+            "Quaker Oats": "magenta",
+            "Ralston Purina": "black"
+        }
+        var mean_values = {
+            fiber: 0,
+            carbo: 0,
+            sugar: 0
         }
 
         async function init() {
-            d3.csv("./cereal.csv", (data) => {
-                var scene1 = d3.select("#scene1")
+            d3.csv("https://raw.githubusercontent.com/416Dataviz/416Dataviz.github.io/main/cereal.csv", (data) => {
+                var avgRatingData = avgRatingOfMfr(data);
+                initScene1(avgRatingData, data);
+                initMeanValues(data);
+                console.log(mean_values);
+                document.getElementById("overview-btn").click();
+            });
+        }
+
+        function initScene1(avgRatingData, data) {
+            var scene1 = d3.select("#scene1")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
                     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-            var x = d3.scaleLinear()
-                .domain([0, 10])
-                .range([ 0, width ]);
+            var x = d3.scaleBand()
+                        .range([ 0, width ])
+                        .domain(avgRatingData.map(function(d) { return d.mfr; }))
+                        .padding(0.2);
+            scene1.append("g")
+                    .attr("transform", "translate(5," + height + ")")
+                    .call(d3.axisBottom(x))
+                    .selectAll("text")
+                        .attr("transform", "translate(-10,0)rotate(-45)")
+                        .style("text-anchor", "end");
 
             var y = d3.scaleLinear()
-                .domain([0, 130])
-                .range([ height, 0]);
+                        .domain([0, 100])
+                        .range([ height, 0]);
 
-            scene1.append("g").call(d3.axisLeft(y));      
-            scene1.append("g").attr("transform", "translate(0," + height + ")").call(d3.axisBottom(x));
+            scene1.append("g")
+                    .attr("transform", "translate(5, 0)")
+                    .call(d3.axisLeft(y));
+            
+            var tooltip = d3.select("#tooltip");
+            var transition = d3.transition().duration(750).ease(d3.easeLinear);
 
             scene1.append('g')
-                .selectAll("circle")
-                .data(data)
-                .enter()
-                .append("circle")
-                .attr("cx", function (d) { return x(d.rating); } )
-                .attr("cy", function (d) { return y(d.calories); } )
-                .attr("r", 3)
-                .style("fill", "black")
-            });
+                    .selectAll("rect")
+                    .data(avgRatingData)
+                    .enter()
+                    .append("rect")
+                    .attr("x", function (d) { return x(d.mfr); } )
+                    .attr("y", function (d) { return y(d.avgRating); } )
+                    .attr("height", function(d) { return height - y(d.avgRating) } )
+                    .attr("width", x.bandwidth())
+                    .style("fill", function (d) { return manufacturer[d.mfr]; })
+                    .on("mouseover", function(d, i) {
+                        tooltip
+                                .style("opacity", 1)
+                                .style("left", (d3.event.pageX)+"px")
+                                .style("top", (d3.event.pageY)+"px")
+                                .html("Manufacturer:" + d.mfr + "<br/>Rating:" + d.avgRating)
+                    }).on("mouseout", function(d, i) {
+                        tooltip
+                                .style("opacity", 0)
+                    }).on("click", function(d, i) {
+                        var products = data.filter((cereal) => d.mfr === cereal.mfr);
+                        initScene2(products);
+                        d3.select("#cereals-btn").attr("class", "tablinks");
+                        d3.select("#nutritional-info-btn").attr("class", "tablinks hidden");
+                        d3.select("#scene3").selectAll("*").remove();
+                        document.getElementById("cereals-btn").click();
+                    });
+            
+            var annotations = [
+                {
+                    note: {
+                        label: "Click any bar to further drill down into data",
+                        align: "middle",
+                        wrap: 100,
+                        padding: 5
+                    },
+                    x: 50,
+                    y: y(105),
+                    dx: 0,
+                    dy: 0,
+                    color: ["blue"]
+                }
+            ];
+
+            var makeAnnotations = d3.annotation().annotations(annotations);
+
+            scene1
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .call(makeAnnotations);
         }
-        
+
+        function initScene2(data) {
+            var scene2 = d3.select("#scene2")
+            scene2.selectAll("*").remove();
+            d3.select("cereals-btn").style("display", "block");
+            scene2
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            var x = d3.scaleBand()
+                        .range([ 0, width ])
+                        .domain(data.map(function(d) { return d.name; }))
+                        .padding(0.2);
+            scene2.append("g")
+                    .attr("transform", "translate(30," + (20 + height) + ")")
+                    .call(d3.axisBottom(x))
+                    .selectAll("text")
+                        .attr("transform", "translate(-10,0)rotate(-45)")
+                        .style("text-anchor", "end");
+
+            var y = d3.scaleLinear()
+                        .domain([0, 100])
+                        .range([ height, 0]);
+
+            scene2.append("g")
+                    .attr("transform", "translate(30, 20)")
+                    .call(d3.axisLeft(y));
+
+            var tooltip = d3.select("#tooltip");
+            var transition = d3.transition().duration(750).ease(d3.easeLinear);
+
+            scene2.append('g')
+                    .selectAll("rect")
+                    .data(data)
+                    .enter()
+                    .append("rect")
+                    .attr("x", function (d) { return 30 + x(d.name); } )
+                    .attr("y", function (d) { return 20 + y(parseFloat(d.rating).toFixed(2)); } )
+                    .attr("height", function(d) { return height - y(parseFloat(d.rating).toFixed(2)) } )
+                    .attr("width", x.bandwidth())
+                    .style("fill", function (d) { return manufacturer[d.mfr]; })
+                    .on("mouseover", function(d, i) {
+                        tooltip
+                                .style("opacity", 1)
+                                .style("left", (d3.event.pageX)+"px")
+                                .style("top", (d3.event.pageY)+"px")
+                                .html("Cereal Name:" + d.name + "<br/>Rating:" + parseFloat(d.rating).toFixed(2))
+                    }).on("mouseout", function(d, i) {
+                        tooltip
+                                .style("opacity", 0)
+                    }).on("click", function(d, i) {
+                        var nutrients = [
+                            {
+                                name: "Fiber",
+                                value: d.fiber,
+                                color: "red"
+                            },
+                            {
+                                name: "Carbohydrates",
+                                value: d.carbo,
+                                color: "green"
+                            },
+                            {
+                                name: "Sugar",
+                                value: d.sugars,
+                                color: "blue"
+                            }
+                        ]
+                        initScene3(nutrients);
+                        d3.select("#nutritional-info-btn").attr("class", "tablinks");
+                        document.getElementById("nutritional-info-btn").click();
+                    });
+
+            var annotations = [
+                {
+                    note: {
+                        label: "Click any bar to further drill down into data",
+                        align: "middle",
+                        wrap: 100,
+                        padding: 5
+                    },
+                    x: 50,
+                    y: y(100),
+                    dx: 0,
+                    dy: 0,
+                    color: ["blue"]
+                }
+            ];
+
+            var makeAnnotations = d3.annotation().annotations(annotations);
+
+            scene2
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                .call(makeAnnotations);
+        }
+
+        function initScene3(data) {
+            var scene3 = d3.select("#scene3")
+                .style("display", "block")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            var x = d3.scaleBand()
+                        .range([ 0, width ])
+                        .domain(data.map(function(d) { return d.name; }))
+                        .padding(0.2);
+            scene3.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x))
+                    .selectAll("text")
+                        .attr("transform", "translate(-10,0)rotate(-45)")
+                        .style("text-anchor", "end");
+
+            var y = d3.scaleLinear()
+                        .domain([0, 25])
+                        .range([ height, 0]);
+
+            scene3.append("g").call(d3.axisLeft(y));
+
+            // Add X axis label
+            scene3
+                .append("g")
+                .attr("transform", "translate(" + 0 + "," + margin.top + ")")
+                .append("text")
+                .attr("text-anchor", "end")
+                .attr("x", (width / 2))
+                .attr("y", height + 80)
+                .text("Wellbore");
+            // Y axis label
+            scene3.append("text")
+                .attr("text-anchor", "end")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -60)
+                .attr("x", -height/2)
+                .text("Value in grams per serving")
+            
+            var tooltip = d3.select("#tooltip");
+            var transition = d3.transition().duration(750).ease(d3.easeLinear);
+
+            var mean_fiber_line = d3.path();
+            mean_fiber_line.moveTo(0, y(mean_values.fiber));
+            mean_fiber_line.lineTo(width, y(mean_values.fiber));
+
+            scene3
+                .append("g")
+                .attr("transform", "translate(" + 0 + "," + margin.top + ")")
+                .append("path")
+                .attr("d", mean_fiber_line)
+                .attr("stroke", "red");
+
+            var mean_carbo_line = d3.path();
+            mean_carbo_line.moveTo(0, y(mean_values.carbo));
+            mean_carbo_line.lineTo(width, y(mean_values.carbo));
+
+            scene3
+                .append("g")
+                .attr("transform", "translate(" + 0 + "," + margin.top + ")")
+                .append("path")
+                .attr("d", mean_carbo_line)
+                .attr("stroke", "green");
+
+            var mean_sugar_line = d3.path();
+            mean_sugar_line.moveTo(0, y(mean_values.sugar));
+            mean_sugar_line.lineTo(width, y(mean_values.sugar));
+
+            scene3
+                .append("g")
+                .attr("transform", "translate(" + 0 + "," + margin.top + ")")
+                .append("path")
+                .attr("d", mean_sugar_line)
+                .attr("stroke", "blue");
+
+            var annotations = [
+                {
+                    note: {
+                        label: mean_values.fiber,
+                        align: "center",
+                        wrap: 100,
+                        padding: 5
+                    },
+                    connector: {
+                        end: "arrow",
+                        type: "line"
+                    },    
+                    type: d3.annotationCalloutCircle,
+                    subject: {
+                        radius: 5, 
+                        radiusPadding: 0
+                    },
+                    x: width - 20,
+                    y: y(mean_values.fiber),
+                    dx: 10,
+                    dy: -40,
+                    color: ["red"]
+                },
+                {
+                    note: {
+                        label: mean_values.carbo,
+                        align: "center",
+                        wrap: 100,
+                        padding: 5
+                    },
+                    connector: {
+                        end: "arrow",
+                        type: "line"
+                    },    
+                    type: d3.annotationCalloutCircle,
+                    subject: {
+                        radius: 5, 
+                        radiusPadding: 0
+                    },
+                    x: width - 20,
+                    y: y(mean_values.carbo),
+                    dx: 10,
+                    dy: -40,
+                    color: ["green"]
+                },
+                {
+                    note: {
+                        label: mean_values.sugar,
+                        align: "center",
+                        wrap: 100,
+                        padding: 5
+                    },
+                    connector: {
+                        end: "arrow",
+                        type: "line"
+                    },    
+                    type: d3.annotationCalloutCircle,
+                    subject: {
+                        radius: 5, 
+                        radiusPadding: 0
+                    },
+                    x: width - 20,
+                    y: y(mean_values.sugar),
+                    dx: 10,
+                    dy: 40,
+                    color: ["blue"]
+                }
+            ];
+
+            var makeAnnotations = d3.annotation().annotations(annotations);
+
+            scene3.append("text").attr("x",10).attr("y",10).text("Legend: ").style("font-size", "15px").style("text-decoration", "underline");
+            scene3.append("rect").attr("x",10).attr("y",28).attr("width", 14).attr("height", 1).style("fill", "red").style("stroke", "red");;
+            scene3.append("rect").attr("x",10).attr("y",48).attr("width", 14).attr("height", 1).style("fill", "green").style("stroke", "green");;
+            scene3.append("rect").attr("x",10).attr("y",68).attr("width", 14).attr("height", 1).style("fill", "blue").style("stroke", "blue");;
+            scene3.append("text").attr("x",30).attr("y",30).text("Average Fiber Value").style("font-size", "14px").attr("alignment-baseline","middle");
+            scene3.append("text").attr("x",30).attr("y",50).text("Average Carbohydrates Value").style("font-size", "14px").attr("alignment-baseline","middle");
+            scene3.append("text").attr("x",30).attr("y",70).text("Average Sugar Value").style("font-size", "14px").attr("alignment-baseline","middle");
+
+            scene3
+                .append("g")
+                .attr("transform", "translate(" + 0 +"," + margin.top + ")")
+                .call(makeAnnotations);
+
+            scene3.append('g')
+                    .selectAll("rect")
+                    .data(data)
+                    .enter()
+                    .append("rect")
+                    .attr("x", function (d) { return x(d.name); } )
+                    .attr("y", function (d) { return y(d.value); } )
+                    .attr("height", function(d) { return height - y(d.value) } )
+                    .attr("width", x.bandwidth())
+                    .style("fill", function (d) { return d.color; })
+                    .on("mouseover", function(d, i) {
+                        tooltip
+                                .style("opacity", 1)
+                                .style("left", (d3.event.pageX)+"px")
+                                .style("top", (d3.event.pageY)+"px")
+                                .html("Nutrient Name:" + d.name + "<br/>Value:" + d.value)
+                    }).on("mouseout", function(d, i) {
+                        tooltip
+                                .style("opacity", 0)
+                    });
+        }
+
+        function avgRatingOfMfr(data) {
+            var avgRating = [];
+            Object.keys(manufacturer).forEach((mfr) => {
+                var products = data.filter((d) => d.mfr === mfr);
+                var total_rating = 0;
+                for (let prod of products) {
+                    total_rating = total_rating + parseFloat(prod.rating);
+                }
+                avgRating.push({mfr: mfr, avgRating: (total_rating / products.length).toFixed(2)});
+            });
+            return avgRating;
+        }
+
+        function getProductsByMfr(data, mfr) {
+            var products = data.filter((d) => d.mfr === mfr);
+            return products;
+        }
+
+        function initMeanValues(data) {
+            data.forEach((d) => {
+                mean_values.fiber += parseInt(d.fiber);
+                mean_values.carbo += parseInt(d.carbo);
+                mean_values.sugar += parseInt(d.sugar);
+            });
+            mean_values.fiber = (mean_values.fiber / data.length).toFixed(2);
+            mean_values.carbo = (mean_values.carbo / data.length).toFixed(2);
+            mean_values.sugar = (mean_values.sugar / data.length).toFixed(2);
+        }
+
+        function openScene(evt, scene) {
+            // Declare all variables
+            var i, tabcontent, tablinks;
+
+            // Get all elements with class="tabcontent" and hide them
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tablinks" and remove the class "active"
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            document.getElementById(scene).style.display = "block";
+            evt.currentTarget.className += " active";
+        }        
     </script>
 </body>
 </html>
