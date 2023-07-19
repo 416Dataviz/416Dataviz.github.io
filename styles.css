@@ -22,7 +22,7 @@
     font-weight: bold;
 }
 
-.header .content p {
+.header .content #narration {
     font-size: 125%;
 }
 
