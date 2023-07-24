@@ -43,6 +43,10 @@
     justify-content: center;
 }
 
+.visualization .params {
+    margin-left: 5%;
+}
+
 #overview-btn {
     display: block;
 }
